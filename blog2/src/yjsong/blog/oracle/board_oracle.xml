@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="Board">
+ 
+ 	<!-- 게시판 목록 조회 -->
+ 	<select id="selectBoardList" resultType="yjsong.blog.model.Board">
+ 		SELECT *
+			FROM (
+				SELECT originalquery.*, ROWNUM numb
+					,COUNT(*) OVER() AS records
+				FROM (
+				
+				 		SELECT	BOARD_NO		as	boardNo
+				 			  , BOARD_CAT		as	boardCat
+				 			  , BOARD_TITLE		as	boardTitle
+				 			  , BOARD_CONTENT	as	boardContent
+				 			  , READ_COUNT		as	readCount
+				 			  , FILE_NO			as	fileNo
+				 			  , CREATE_USER		as	createUser
+				 			  , TO_CHAR(CREATE_DATE,'yyyy.mm.dd hh12:mi:ss')	as	createDate
+				 			  , DEL_YN			as	delYn
+				 			 FROM BOARD
+				 			WHERE DEL_YN = 'N'
+				 			<if test="searchItems != null and searchItems != ''">
+							 	AND ${searchOption} LIKE '%' || #{searchItems} || '%'
+							</if>
+	 					ORDER BY CREATE_DATE DESC
+		 			) originalquery
+			)p
+			WHERE (#{allRow} = 1) OR (numb BETWEEN #{startRow} AND #{endRow}) 
+ 	</select>
+ 	
+ 	<!-- 게시판 상세 조회 -->
+ 	<select id="selectBoardView" resultType="yjsong.blog.model.Board">
+	 	<choose>
+				<when test="boardNo != null and boardNo != '' and boardNo != 0">
+			 		SELECT	BOARD_NO		as	boardNo
+			 			  , BOARD_CAT		as	boardCat
+			 			  , BOARD_TITLE		as	boardTitle
+			 			  , BOARD_CONTENT	as	boardContent
+			 			  , READ_COUNT		as	readCount
+			 			  , FILE_NO			as	fileNo
+			 			  , CREATE_USER		as	createUser
+			 			  , TO_CHAR(CREATE_DATE,'yyyy.mm.dd hh12:mi:ss')	as	createDate
+			 			  , DEL_YN			as	delYn
+			 			
+			 			 FROM BOARD
+			 			WHERE BOARD_NO = #{boardNo}
+ 			</when>
+			<otherwise>
+ 				SELECT TO_CHAR(SYSDATE, 'yyyy.mm.dd hh12:mi:ss') as createDate FROM DUAL
+			</otherwise>
+		</choose>
+ 	</select>
+ 	
+ 	<!-- 게시판 저장 일시 조회 -->
+ 	<select id="selectSaveData" resultType="yjsong.blog.model.Board">
+ 		SELECT TO_CHAR(SYSDATE, 'yyyy.mm.dd hh12:mi:ss') as createDate FROM DUAL 
+ 	</select>
+ 	
+ 	<!-- 게시판 저장 -->
+ 	<insert id="insertBoardWrite">
+ 		<selectKey keyProperty="boardNo" resultType="yjsong.blog.model.Board" order="BEFORE">
+			SELECT FN_GET_SEQUENCE.NEXTVAL	AS	boardNo  FROM DUAL
+		</selectKey>
+ 		INSERT INTO BOARD (
+			   BOARD_NO
+			 , BOARD_TITLE
+			 , BOARD_CONTENT
+             , CREATE_USER
+             , CREATE_DATE
+             , DEL_YN
+		) VALUES (
+			   #{boardNo}
+			 , #{boardTitle}
+			 , #{boardContent}
+			 , #{createUser}
+			 , sysdate
+			 , 'N'
+		)
+ 	</insert>
+ 	
+ 	<!-- 게시판 수정 -->
+ 	<update id="updateBoardWrite">
+ 		UPDATE BOARD 
+		   SET BOARD_TITLE 	 = #{boardTitle}
+		   	 , BOARD_CONTENT = #{boardContent}
+		   	 , UPDATE_DATE   = sysdate
+		     , UPDATE_USER   = #{updateUser}
+		 WHERE BOARD_NO 	 = #{boardNo}
+ 	</update>
+ 	
+ 	<!-- 게시판 삭제 -->
+ 	<update id="deleteBoardView">
+		UPDATE BOARD 
+		   SET DEL_YN 		= 'Y'
+		     , UPDATE_DATE  = sysdate
+		     , UPDATE_USER  = #{updateUser}
+		 WHERE BOARD_NO 	= #{boardNo}
+ 	</update>
+ 	
+ 	<!-- 조회수 증가 -->
+ 	<update id="updateReadCount">
+ 		UPDATE BOARD 
+		   SET READ_COUNT  = READ_COUNT + 1
+		 WHERE BOARD_NO    = #{boardNo}
+ 	</update>
+ </mapper>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans 
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:aop="http://www.springframework.org/schema/aop" 
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+       http://www.springframework.org/schema/aop
+       http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+       
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<value>/WEB-INF/dbconnect.properties</value>
+		</property>
+	</bean>
+	
+	<!-- DBCP를 위한 DataSource 객체 -->
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="${driver}"/>
+		<property name="url" value="${url}"/>
+		<property name="username" value="${username}"/>
+		<property name="password" value="${password}"/>
+  		<property name="maxActive" value="10" />
+  		<property name="maxIdle" value="3" />
+  		<property name="maxWait" value="10000" />
+  		<property name="defaultAutoCommit" value="true" />   <!--  기본:true  -->
+	</bean>
+	
+	<!--  SqlSessionFactoryBean : SqlSessionTemplate 객체를 얻는다. -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean" lazy-init="true">
+		<property name="dataSource" ref="dataSource" />
+        <property name="configLocation" value="classpath:/yjsong/blog/oracle/sql-mybatis-config.xml" />
+ 		<property name="mapperLocations" value="classpath:/yjsong/blog/oracle/*_oracle.xml" />
+		 <!-- 
+		 <property name="mapperLocations" value="classpath:com/think/mapper/**/*.xml" />
+		 -->
+         <!-- 
+         <property name="transactionFactory">
+                <bean class="org.apache.ibatis.transaction.managed.ManagedTransactionFactory" />
+          </property>
+           -->
+	</bean>
+	
+	<!-- 공통 dao -->
+    <bean id="boardDAOImpl" class="yjsong.blog.dao.BoardDAOImpl">
+      	<property name="sqlSession" ref="sqlSession"></property>
+    </bean>
+
+	<!-- SqlSessionTemplate : MyBatis SQL method 호출 및 관리, 예예처리 담당 -->
+    <bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+           <constructor-arg index="0" ref="sqlSessionFactory" />
+    </bean>
+
+    <!-- 트랜잭션관리자. -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+
+	<!-- 트랜잭션과 관련된 작업(트랜잭션시작, 커및, 롤백등) -->
+    <bean id="transactionTemplate" class="org.springframework.transaction.support.TransactionTemplate">
+         <property name="transactionManager" ref="transactionManager" />
+     </bean>
+	
+   <!--   <bean id="hello"   class="springController.HelloController"/>-->   <!--  패키지이름점.class -->
+   
+   
+    <context:component-scan base-package="*"/><!-- 해당 패키지 다검새 -->
+    <!--  
+   <bean id="viewResolver"
+   class="org.springframework.web.servelet.view.InternalResourceViewResolver">
+   <property name="prefix" value="/test"/>
+   <property name="subfix"  value=".jsp"/>
+   언노테이션 파일경로 확장자 줄이기
+   </bean>
+    -->
+   	
+   		
+     <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+     	<property name="maxUploadSize" value="-1"></property>
+     	<property name="defaultEncoding" value="euc-kr"></property>
+     </bean>
+     
+     </beans>
